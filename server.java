@@ -93,8 +93,21 @@ public class server
 						System.out.println("NOT Unlockin for " + inputs[1]);
 						return "Failed";
 					}
-				case "requests":
+				case "users":
 					String[] secondIn = inputs[1].split(";;");
+					String users;
+					if(isOwner(secondIn[1]))
+					{
+						users = getUsers();
+					}
+					else
+					{
+						return null;
+					}
+					System.out.println(users);
+					return secondIn[0] + "," + users;
+				case "requests":
+					secondIn = inputs[1].split(";;");
 					String req;
 					if(isOwner(secondIn[1]))
 					{
@@ -118,6 +131,10 @@ public class server
 					System.out.println("request from " + inputs[1]);
 					request(inputs[1]);
 					return "OK";
+				case "remove":
+					System.out.println("removing rights for " + inputs[1]);
+					remove(inputs[1]);
+					return "OK";
 			}
 		}
 		catch (IOException e)
@@ -131,6 +148,12 @@ public class server
 	public static String getRequests()
 	{
 		StringBuilder sb = readFile("/cycurity/requests.conf");
+		return  sb.toString();
+	}
+
+	public static String getUsers()
+	{
+		StringBuilder sb = readFile("/cycurity/users.conf");
 		return  sb.toString();
 	}
 
@@ -174,7 +197,10 @@ public class server
 			
 			sb = readFile("/cycurity/users.conf");
 			s = sb.toString();
-			s = s + "," + userPass;
+			if(s.indexOf(';') == -1)
+				s = userPass;
+			else
+				s = s + "," + userPass;
 			s = s.replaceAll("^,","");
 			s = s.replace("\n", "").replace("\r", "");
 			writeFile("/cycurity/users.conf",s);
@@ -183,7 +209,16 @@ public class server
 
 	public static void request(String userPass)
 	{
-		StringBuilder sb = readFile("/cycurity/requests.conf");
+		StringBuilder sb = readFile("/cycurity/users.conf");
+		if(sb.indexOf(";") == -1)
+		{
+			handleRequest(userPass, true);
+			System.out.println("made "+userPass+" an owner");
+			return;
+		}
+			
+		
+		sb = readFile("/cycurity/requests.conf");
 		String s = sb.toString();
 		s = s + "," + userPass;
 		s = s.replace("\n", "").replace("\r", "");
@@ -191,6 +226,19 @@ public class server
 		writeFile("/cycurity/requests.conf",s);
 	}
 
+	public static void remove(String userPass)
+	{
+		StringBuilder sb = readFile("/cycurity/users.conf");
+		int i = sb.indexOf(userPass);
+		if (i != -1) {
+			sb.delete(i, i + userPass.length());
+		}
+		
+		replaceAll(sb,",,",",");
+		String s = sb.toString();
+		s = s.replaceAll(",$","");
+		writeFile("/cycurity/users.conf",s);
+	}
 
 	public static void replaceAll(StringBuilder builder, String from, String to)
 	{
